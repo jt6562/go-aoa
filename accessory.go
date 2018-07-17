@@ -17,6 +17,8 @@ type (
 
 		accessory *AccessoryMode
 		audio     *AudioMode
+
+		config *AccessoryConfig
 	}
 
 	AccessoryMode struct {
@@ -29,12 +31,36 @@ type (
 		epIn *gousb.InEndpoint
 		done func()
 	}
+
+	AccessoryConfig struct {
+		Manufacturer string
+		Model        string
+		Description  string
+		Version      string
+		URI          string
+		Serial       string
+	}
 )
 
 func NewAccessory() *Accessory {
 	return &Accessory{
 		usbctx: gousb.NewContext(),
 	}
+}
+
+func (acc *Accessory) SetAccessoryConfig(config AccessoryConfig) {
+
+	if config.Manufacturer == "" {
+		config.Manufacturer = "Google Inc."
+	}
+	if config.Model == "" {
+		config.Model = "DemoKit"
+	}
+	if config.Version == "" {
+		config.Version = "2.0"
+	}
+
+	acc.config = &config
 }
 
 func (acc *Accessory) Close() {
@@ -118,12 +144,12 @@ func (acc *Accessory) SwitchToAccessoryMode(mode uint8) (err error) {
 	// Switch to accessory mode
 	fmt.Println("Switching a android to accessory mode", dev)
 	if mode&MODE_ACCESSORY > 0 {
-		sendString(dev, ACCESSORY_SEND_STRING, 0, ACCESSORY_STRING_MANUFACTURER, []byte("megvii\x00"))
-		sendString(dev, ACCESSORY_SEND_STRING, 0, ACCESSORY_STRING_MODEL, []byte("WorkerStorage\x00"))
-		sendString(dev, ACCESSORY_SEND_STRING, 0, ACCESSORY_STRING_DESCRIPTION, []byte("Beehive Worker Storage Service\x00"))
-		sendString(dev, ACCESSORY_SEND_STRING, 0, ACCESSORY_STRING_VERSION, []byte("1.0.0\x00"))
-		sendString(dev, ACCESSORY_SEND_STRING, 0, ACCESSORY_STRING_URI, []byte("https://collect.zzcrowd.com\x00"))
-		sendString(dev, ACCESSORY_SEND_STRING, 0, ACCESSORY_STRING_SERIAL, []byte("1234567890\x00"))
+		sendString(dev, ACCESSORY_SEND_STRING, 0, ACCESSORY_STRING_MANUFACTURER, []byte(acc.config.Manufacturer+"\x00"))
+		sendString(dev, ACCESSORY_SEND_STRING, 0, ACCESSORY_STRING_MODEL, []byte(acc.config.Model+"\x00"))
+		sendString(dev, ACCESSORY_SEND_STRING, 0, ACCESSORY_STRING_DESCRIPTION, []byte(acc.config.Description+"\x00"))
+		sendString(dev, ACCESSORY_SEND_STRING, 0, ACCESSORY_STRING_VERSION, []byte(acc.config.Version+"\x00"))
+		sendString(dev, ACCESSORY_SEND_STRING, 0, ACCESSORY_STRING_URI, []byte(acc.config.URI+"\x00"))
+		sendString(dev, ACCESSORY_SEND_STRING, 0, ACCESSORY_STRING_SERIAL, []byte(acc.config.Serial+"\x00"))
 	}
 
 	if mode&MODE_AUDIO > 0 && acc.AoAProtocol > 1 {
